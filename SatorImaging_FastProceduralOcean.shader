@@ -82,9 +82,9 @@
 
         void vert (inout appdata_full v) {
             #if _TANGENTSPACE_ON
-                v.vertex.xyz += v.normal * getwaves(v.texcoord.xy*10 + _WaveMovement.xz*_Time, _VertexIterations, _Time * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
+                v.vertex.xyz += v.normal * getwaves(v.texcoord.xy*10 + _WaveMovement.xz*_Time.x, _VertexIterations, _Time.x * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
             #else
-                v.vertex.y += getwaves(v.vertex.xz + _WaveMovement.xz*_Time, _VertexIterations, _Time * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
+                v.vertex.y += getwaves(v.vertex.xz + _WaveMovement.xz*_Time.x, _VertexIterations, _Time.x * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
             #endif
         }
 
@@ -110,7 +110,7 @@
                     WorldNormalVector(IN, float3(0,0,1))
                 );
                 o.Normal = lerp(o.Normal, normalize(mul( w2t, half4(
-                                normal(IN.uv_MainTex.xy*10 + _WaveMovement.xz*_Time, 0.001, 1, _Time * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness), 1
+                                normal(IN.uv_MainTex.xy*10 + _WaveMovement.xz*_Time.x, 0.001, 1, _Time.x * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness), 1
                             ))), _WaveNormalStrength);
             #else
                 half3x3 w2t = half3x3(
@@ -119,7 +119,7 @@
                     WorldNormalVector(IN, float3(0,0,1))
                 );
                 o.Normal = lerp(o.Normal, normalize(mul( w2t, half4(
-                                normal(IN.worldPos.xz + _WaveMovement.xz*_Time, 0.001, 1, _Time * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness), 1
+                                normal(IN.worldPos.xz + _WaveMovement.xz*_Time.x, 0.001, 1, _Time.x * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness), 1
                             ))), _WaveNormalStrength);
             #endif
 
