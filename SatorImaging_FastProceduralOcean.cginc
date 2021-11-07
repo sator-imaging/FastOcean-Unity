@@ -1,5 +1,7 @@
 ﻿// https://www.shadertoy.com/view/MdXyzX
 
+//afl_ext 2017-2019
+
 /*
 #define DRAG_MULT 0.048
 #define ITERATIONS_RAYMARCH 13
