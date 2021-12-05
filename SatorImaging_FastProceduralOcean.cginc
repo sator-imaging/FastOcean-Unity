@@ -1,7 +1,5 @@
 ﻿// https://www.shadertoy.com/view/MdXyzX
-
 //afl_ext 2017-2019
-
 /*
 #define DRAG_MULT 0.048
 #define ITERATIONS_RAYMARCH 13
@@ -11,6 +9,9 @@
 #define Resolution (iResolution.xy)
 #define Time (iTime)
 */
+
+#define POSITION_LIMIT 1000
+
 
 float2 wavedx(float2 position, float2 direction, float speed, float frequency, float timeshift)
 {
@@ -68,6 +69,8 @@ float raymarchwater(float3 camera, float3 start, float3 end, float depth)
 float H = 0.0;
 float3 normal(float2 pos, float e, float depth, float waveTime, int iterations, float waveScale, float waveSharpness)
 {
+    pos = fmod(pos, POSITION_LIMIT);
+
     float2 ex = float2(e, 0);
     H = getwaves(pos.xy * 0.1, iterations, waveTime, waveScale, waveSharpness) * depth;
     float3 a = float3(pos.x, H, pos.y);

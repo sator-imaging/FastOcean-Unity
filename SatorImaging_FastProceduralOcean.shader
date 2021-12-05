@@ -10,8 +10,7 @@
         [Space]
         [IntRange] _VertexIterations ("Vertex Iterations", Range(1, 64)) = 10
         [IntRange] _NormalIterations ("Normal Iterations", Range(1, 64)) = 30
-        // vertex and normal doesn't match.
-        //[Toggle] _TangentSpace ("Tangent Space Deformation", Float) = 0
+        [Toggle] _TangentSpace ("Tangent Space Deformation", Float) = 0
 
         [Space]
         _WaveDensity ("Wave Density", Range(1, 10)) = 4
@@ -25,6 +24,11 @@
         _WaveSpeed ("Wave Speed", Range(0, 50)) = 10
         _WaveMovement ("Wave Movement", Vector) = (0, 0, 0, 0)
 
+        _FoamColor ("Foam Color", Color) = (1, 1, 1, 1)
+        _FoamPower("Foam Power", Float) = 1.125
+        _FoamStrength("Foam Strength", Float) = 10
+
+        [Space]
         _Color ("Color", Color) = (0.2216981, 0.6714061, 1, 1)
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
         _Glossiness ("Smoothness", Range(0, 1)) = 0.5
@@ -40,6 +44,7 @@
         CGPROGRAM
         // Physically based Standard lighting model, and enable shadows on all light types
         #pragma surface surf Standard vertex:vert fullforwardshadows addshadow tessellate:tessEdge tessphong:_Phong /////alpha:blend keepalpha
+        #pragma require tessellation tessHW
 
         #pragma multi_compile_local  _  _TANGENTSPACE_ON
 
@@ -50,6 +55,10 @@
         #pragma target 3.0
 
 
+
+        fixed4 _FoamColor;
+        half _FoamPower;
+        half _FoamStrength;
 
         fixed4 _Color;
         sampler2D _MainTex;
@@ -80,53 +89,73 @@
 
 
 
-        void vert (inout appdata_full v) {
+        struct Input
+        {
+            float2 uv_MainTex;
+            float3 worldPos;
+            //INTERNAL_DATA
+            //float3 worldRefl;
+            //float3 worldNormal;
+        };
+
+
+
+        void vert (inout appdata_full v)
+        {
             #if _TANGENTSPACE_ON
-                v.vertex.xyz += v.normal * getwaves(v.texcoord.xy*10 + _WaveMovement.xz*_Time.x, _VertexIterations, _Time.x * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
+                v.vertex.xyz += v.normal * getwaves(
+                     (v.texcoord.xy + _WaveMovement.xz * _Time.x) * 10,
+                    _VertexIterations, _Time.x * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
             #else
-                v.vertex.y += getwaves(v.vertex.xz + _WaveMovement.xz*_Time.x, _VertexIterations, _Time.x * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
+                v.vertex.y += getwaves(
+                    v.vertex.xz + _WaveMovement.xz * _Time.x,
+                    _VertexIterations, _Time.x * _WaveSpeed, _WaveDensity, _WaveSharpness) * _WaveHeight;
             #endif
         }
 
 
 
 
-        struct Input
-        {
-            float2 uv_MainTex;
-            float3 worldPos;
-            INTERNAL_DATA
-            //float3 worldRefl;
-            float3 worldNormal;
-        };
-
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
+            //  WorldNormalVector is wierd. this's not "tangent space to world space" function.
+            //  - if IN and o.Normal are passed, it transforms tangent space to world space as expected.
+            //  - if IN and constant are passed, it's not work as expected (just do nothing).
+            //  solution: nothing. don't use.
+
+            //half3x3 w2t = half3x3(
+            //    WorldNormalVector(IN, float3(1,0,0)),
+            //    WorldNormalVector(IN, float3(0,1,0)),
+            //    WorldNormalVector(IN, float3(0,0,1))
+            //);
+
+            float3 norm;
             #if _TANGENTSPACE_ON
-                half3x3 w2t = half3x3(
-                    WorldNormalVector(IN, float3(1,0,0)),
-                    WorldNormalVector(IN, float3(0,1,0)),
-                    WorldNormalVector(IN, float3(0,0,1))
-                );
-                o.Normal = lerp(o.Normal, normalize(mul( w2t, half4(
-                                normal(IN.uv_MainTex.xy*10 + _WaveMovement.xz*_Time.x, 0.001, 1, _Time.x * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness), 1
-                            ))), _WaveNormalStrength);
+                norm = normal(
+                    (IN.uv_MainTex.xy + _WaveMovement.xz * _Time.x) * 100,
+                    0.001, 1, _Time.x * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness);
             #else
-                half3x3 w2t = half3x3(
-                    WorldNormalVector(IN, float3(1,0,0)),
-                    WorldNormalVector(IN, float3(0,1,0)),
-                    WorldNormalVector(IN, float3(0,0,1))
-                );
-                o.Normal = lerp(o.Normal, normalize(mul( w2t, half4(
-                                normal(IN.worldPos.xz + _WaveMovement.xz*_Time.x, 0.001, 1, _Time.x * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness), 1
-                            ))), _WaveNormalStrength);
+                norm = normal(
+                    IN.worldPos.xz + _WaveMovement.xz * _Time.x,
+                    0.001, 1, _Time.x * _WaveSpeed, _NormalIterations, _WaveDensity, _WaveSharpness);
+                // unity coordinate
+                norm = float3(-norm.x, norm.y, -norm.z);
             #endif
+            
+
+
+
+            // don't need to rotate vector, just reorder component and use it
+            o.Normal = lerp(o.Normal, norm.xzy, _WaveNormalStrength);
+
 
             // final touches
-            o.Albedo = _Color * tex2D(_MainTex, IN.uv_MainTex);
+            o.Albedo = (_Color * tex2D(_MainTex, IN.uv_MainTex)
+                     + (_FoamColor.rgb * _FoamColor.a) * pow(1-norm.y, _FoamPower) * _FoamStrength);
             o.Metallic = _Metallic;
             o.Smoothness = _Glossiness;
+
         }
         ENDCG
     }
