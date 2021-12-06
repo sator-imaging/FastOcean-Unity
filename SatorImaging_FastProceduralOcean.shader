@@ -8,20 +8,20 @@
         _EdgeLength("Tessellation Edge Length", Range(2.5, 100)) = 100
 
         [Space]
-        [IntRange] _VertexIterations ("Vertex Iterations", Range(1, 64)) = 10
-        [IntRange] _NormalIterations ("Normal Iterations", Range(1, 64)) = 30
-        [Toggle] _TangentSpace ("Tangent Space Deformation", Float) = 0
+        [IntRange] _VertexIterations ("Vertex Iterations", Range(1, 64)) = 8
+        [IntRange] _NormalIterations ("Normal Iterations", Range(1, 64)) = 32
+        [Toggle] _TangentSpace ("Tangent Space Deformation", Float) = 1
 
         [Space]
-        _WaveDensity ("Wave Density", Range(1, 10)) = 4
+        _WaveDensity ("Wave Density", Range(1, 10)) = 4.5
         _WaveHeight ("Wave Height", Range(0, 1)) = 0.5
-        _WaveSharpness ("Wave Peak Strength", Range(0.01, 0.4)) = 0.2//0.048
+        _WaveSharpness ("Wave Peak Strength", Range(0.01, 0.4)) = 0.16  //0.048
 
         [Space]
         _WaveNormalStrength ("Wave Normal Strength", Range(0,2)) = 1
 
         [Space]
-        _WaveSpeed ("Wave Speed", Range(0, 50)) = 10
+        _WaveSpeed ("Wave Speed", Range(0, 50)) = 12.5
         _WaveMovement ("Wave Movement", Vector) = (0, 0, 0, 0)
 
         _FoamColor ("Foam Color", Color) = (1, 1, 1, 1)
@@ -29,9 +29,9 @@
         _FoamStrength("Foam Strength", Float) = 10
 
         [Space]
-        _Color ("Color", Color) = (0.2216981, 0.6714061, 1, 1)
+        _OceanColor ("Color", Color) = (0.2216981, 0.6714061, 1, 1)
         _MainTex ("Albedo (RGB)", 2D) = "white" {}
-        _Glossiness ("Smoothness", Range(0, 1)) = 0.5
+        _Glossiness ("Smoothness", Range(0, 1)) = 0.8
         _Metallic ("Metallic", Range(0, 1)) = 0.0
 
     }
@@ -60,7 +60,7 @@
         half _FoamPower;
         half _FoamStrength;
 
-        fixed4 _Color;
+        fixed4 _OceanColor;
         sampler2D _MainTex;
         half _Glossiness;
         half _Metallic;
@@ -151,7 +151,7 @@
 
 
             // final touches
-            o.Albedo = (_Color * tex2D(_MainTex, IN.uv_MainTex)
+            o.Albedo = (_OceanColor * tex2D(_MainTex, IN.uv_MainTex)
                      + (_FoamColor.rgb * _FoamColor.a) * pow(1-norm.y, _FoamPower) * _FoamStrength);
             o.Metallic = _Metallic;
             o.Smoothness = _Glossiness;
